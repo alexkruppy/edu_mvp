@@ -11,11 +11,12 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
-    <artifactId>rest</artifactId>
+    <groupId>com.edu</groupId>
+    <artifactId>edu_mvp</artifactId>
     <version>1.0.0</version>
-    <name>host_mvp</name>
-    <description>Host MVP — Video Streaming Platform with HLS, JWT Auth, Stripe Payments</description>
+    <packaging>jar</packaging>
+    <name>edu_mvp</name>
+    <description>Edu MVP — Online Course Platform</description>
 
     <properties>
         <java.version>17</java.version>
