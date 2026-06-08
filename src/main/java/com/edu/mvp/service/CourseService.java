@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -24,11 +23,11 @@ public class CourseService {
     public List<CourseDto> getAllCourses() {
         return courseRepository.findAll().stream()
                 .map(CourseDto::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public CourseDetailDto getCourseById(Long id) {
-        Course course = courseRepository.findById(id)
+        Course course = courseRepository.findByIdWithModulesAndLessons(id)
                 .orElseThrow(() -> new CourseNotFoundException(id));
         return CourseDetailDto.from(course);
     }

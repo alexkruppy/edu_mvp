@@ -3,6 +3,8 @@ package com.edu.mvp.controller;
 import com.edu.mvp.dto.CourseDetailDto;
 import com.edu.mvp.dto.CourseDto;
 import com.edu.mvp.dto.EnrollResponse;
+import com.edu.mvp.model.Course;
+import com.edu.mvp.repository.CourseRepository;
 import com.edu.mvp.service.CourseService;
 import com.edu.mvp.service.EnrollmentService;
 import org.springframework.http.HttpStatus;
@@ -17,10 +19,12 @@ public class CourseController {
 
     private final CourseService courseService;
     private final EnrollmentService enrollmentService;
+    private final CourseRepository courseRepository;
 
-    public CourseController(CourseService courseService, EnrollmentService enrollmentService) {
+    public CourseController(CourseService courseService, EnrollmentService enrollmentService, CourseRepository courseRepository) {
         this.courseService = courseService;
         this.enrollmentService = enrollmentService;
+        this.courseRepository = courseRepository;
     }
 
     @GetMapping
@@ -39,5 +43,11 @@ public class CourseController {
             @RequestParam Long studentId) {
         EnrollResponse response = enrollmentService.enroll(studentId, courseId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping
+    public ResponseEntity<Course> create(@RequestBody Course course) {
+        Course saved = courseRepository.save(course);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 }

@@ -3,7 +3,6 @@ package com.edu.mvp.dto;
 import com.edu.mvp.model.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CourseDetailDto {
     private Long id;
@@ -18,7 +17,7 @@ public class CourseDetailDto {
         dto.setTitle(course.getTitle());
         dto.setDescription(course.getDescription());
         dto.setCreatedAt(course.getCreatedAt() != null ? course.getCreatedAt().toString() : null);
-        dto.setModules(course.getModules().stream().map(ModuleDto::from).collect(Collectors.toList()));
+        dto.setModules(course.getModules().stream().map(m -> ModuleDto.from(m)).toList());
         return dto;
     }
 
@@ -44,7 +43,7 @@ public class CourseDetailDto {
             dto.setId(module.getId());
             dto.setTitle(module.getTitle());
             dto.setOrderIndex(module.getOrderIndex());
-            dto.setLessons(module.getLessons().stream().map(LessonDto::from).collect(Collectors.toList()));
+            dto.setLessons(module.getLessons().stream().map(l -> LessonDto.from(l)).toList());
             return dto;
         }
 
