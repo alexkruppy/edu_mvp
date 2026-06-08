@@ -3,57 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>edu_mvp — Online Courses</title>
+<title>edu_mvp — Master Modern Development</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
-  <header>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">Launching 2026</div>
+      <h1>Master <span class="gradient-text">Modern Development</span></h1>
+      <p>Expert-led courses in Java, Spring Boot, SQL, and more. <br>Learn at your own pace with hands-on lessons.</p>
+      <div class="hero-actions">
+        <a href="#courses" class="btn btn-hero" onclick="showPage('catalog')">
+          <i class="fas fa-book-open"></i> Browse Courses
+        </a>
+        <a href="#students" class="btn btn-hero-outline" onclick="showPage('students')">
+          <i class="fas fa-users"></i> Our Students
+        </a>
+      </div>
+      <div class="hero-stats">
+        <span><strong id="stat-courses">0</strong> Courses</span>
+        <span><strong id="stat-modules">0</strong> Modules</span>
+        <span><strong id="stat-lessons">0</strong> Lessons</span>
+        <span><strong id="stat-students">0</strong> Students</span>
+      </div>
+    </div>
+    <div class="hero-wave"><svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,50 C360,100 1080,0 1440,50 L1440,100 L0,100 Z" fill="var(--bg)"/></svg></div>
+  </section>
+
+  <!-- HEADER -->
+  <header id="header">
     <div class="header-inner">
-      <h1><i class="fas fa-graduation-cap"></i> edu_mvp</h1>
+      <div class="logo" onclick="showPage('hero')"><i class="fas fa-graduation-cap"></i> edu<span>_mvp</span></div>
       <nav>
         <a href="#" class="active" onclick="showPage('catalog')"><i class="fas fa-book"></i> Courses</a>
         <a href="#" onclick="showPage('students')"><i class="fas fa-users"></i> Students</a>
       </nav>
+      <div class="header-right">
+        <button class="btn btn-sm" onclick="showAddCourseForm()"><i class="fas fa-plus"></i> New Course</button>
+        <button class="btn btn-sm btn-outline" onclick="showAddStudentForm()"><i class="fas fa-user-plus"></i> New Student</button>
+      </div>
     </div>
   </header>
 
   <main>
+    <!-- CATALOG -->
     <div id="page-catalog" class="page active">
       <div class="page-header">
-        <h2>Course Catalog</h2>
-        <button class="btn btn-sm" onclick="showAddCourseForm()"><i class="fas fa-plus"></i> Add Course</button>
+        <div>
+          <h2><i class="fas fa-book"></i> Course Catalog</h2>
+          <p class="page-sub">Comprehensive development courses designed for professionals</p>
+        </div>
+        <div class="page-actions">
+          <input type="text" id="search-input" class="search-input" placeholder="Search courses..." oninput="filterCourses()">
+        </div>
       </div>
       <div id="course-list" class="course-grid"></div>
     </div>
 
+    <!-- COURSE DETAIL -->
     <div id="page-detail" class="page">
-      <button class="btn btn-sm btn-back" onclick="showPage('catalog')"><i class="fas fa-arrow-left"></i> Back</button>
+      <button class="btn btn-sm btn-back" onclick="showPage('catalog')"><i class="fas fa-arrow-left"></i> Back to catalog</button>
       <div id="course-detail"></div>
     </div>
 
+    <!-- STUDENTS -->
     <div id="page-students" class="page">
       <div class="page-header">
-        <h2>Students</h2>
-        <button class="btn btn-sm" onclick="showAddStudentForm()"><i class="fas fa-plus"></i> Add Student</button>
+        <div>
+          <h2><i class="fas fa-users"></i> Students</h2>
+          <p class="page-sub">Active learners on the platform</p>
+        </div>
+        <button class="btn btn-sm" onclick="showAddStudentForm()"><i class="fas fa-user-plus"></i> Add Student</button>
       </div>
       <div id="student-list"></div>
     </div>
-
-    <div id="page-enroll" class="page">
-      <button class="btn btn-sm btn-back" onclick="showPage('catalog')"><i class="fas fa-arrow-left"></i> Back</button>
-      <div id="enroll-form"></div>
-    </div>
   </main>
 
-  <div id="toast" class="toast"></div>
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="logo"><i class="fas fa-graduation-cap"></i> edu<span>_mvp</span></div>
+      <p>&copy; 2026 edu_mvp. Built with Spring Boot &hearts;</p>
+    </div>
+  </footer>
 </div>
 
-<div id="modal" class="modal">
+<!-- MODAL -->
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal-content">
-    <span class="modal-close" onclick="closeModal()">&times;</span>
+    <button class="modal-close" onclick="closeModal()">&times;</button>
     <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- LESSON PREVIEW MODAL -->
+<div id="preview-modal" class="modal" onclick="if(event.target===this)closePreview()">
+  <div class="modal-content modal-lg">
+    <button class="modal-close" onclick="closePreview()">&times;</button>
+    <div id="preview-body"></div>
   </div>
 </div>
 
