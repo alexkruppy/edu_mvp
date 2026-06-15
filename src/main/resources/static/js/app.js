@@ -1,364 +1,207 @@
-const API = '/api';
-let allCourses = [];
-let allStudents = [];
+// ===== NAVBAR =====
+const navbar = document.getElementById('navbar');
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
 
-async function api(path, opts = {}) {
-  const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-    ...opts
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || `HTTP ${res.status}`);
-  }
-  return res.status === 204 ? null : res.json();
-}
-
-function $(id) { return document.getElementById(id); }
-
-// ===== NAVIGATION =====
-function showPage(name, push = true) {
-  if (name === 'hero') {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    return;
-  }
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-  const page = $(`page-${name}`);
-  if (page) page.classList.add('active');
-  const navLink = document.querySelector(`nav a[onclick*="'${name}'"]`);
-  if (navLink) navLink.classList.add('active');
-  if (name === 'catalog') loadCourses();
-  if (name === 'students') loadStudents();
-}
-
-// Sticky header
-let heroDone = false;
 window.addEventListener('scroll', () => {
-  const hero = $('#hero');
-  const header = $('#header');
-  if (!hero || !header) return;
-  const heroBottom = hero.offsetTop + hero.offsetHeight;
-  if (window.scrollY > heroBottom - 60) {
-    if (!heroDone) { heroDone = true; header.classList.add('visible'); }
-  } else {
-    if (heroDone) { heroDone = false; header.classList.remove('visible'); }
-  }
+  navbar.classList.toggle('scrolled', window.scrollY > 60);
 });
 
-// ===== TOAST =====
-function toast(msg, type = 'success') {
-  let el = $('toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'toast';
-    el.className = 'toast';
-    document.body.appendChild(el);
-  }
-  el.textContent = msg;
-  el.className = 'toast ' + type + ' show';
-  if (window.toastTimer) clearTimeout(window.toastTimer);
-  window.toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
-}
+navToggle.addEventListener('click', () => {
+  navLinks.classList.toggle('open');
+});
 
-// ===== MODAL =====
-function showModal(html) {
-  $('modal-body').innerHTML = html;
-  $('modal').classList.add('active');
-}
-function closeModal() { $('modal').classList.remove('active'); }
+navLinks.querySelectorAll('a').forEach(link => {
+  link.addEventListener('click', () => {
+    navLinks.classList.remove('open');
+  });
+});
 
-// ===== PREVIEW =====
-function showPreview(html) {
-  $('preview-body').innerHTML = html;
-  $('preview-modal').classList.add('active');
-}
-function closePreview() { $('preview-modal').classList.remove('active'); }
-
-// ===== COURSES =====
-async function loadCourses() {
-  const el = $('course-list');
-  el.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i>Loading courses...</div>';
-  try {
-    allCourses = await api('/courses');
-    if (!allCourses.length) {
-      el.innerHTML = '<div class="empty"><i class="fas fa-book-open"></i><p>No courses yet</p></div>';
-      return;
+// ===== SCROLL REVEAL =====
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
     }
-    renderCourses(allCourses);
-  } catch (e) {
-    el.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i><p>${esc(e.message)}</p></div>`;
-  }
-}
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-function renderCourses(courses) {
-  const el = $('course-list');
-  const icons = ['fa-java', 'fa-leaf', 'fa-database', 'fa-code', 'fa-server', 'fa-cloud'];
-  el.innerHTML = courses.map((c, i) => `
-    <div class="course-card" onclick="loadCourseDetail(${c.id})">
-      <div class="course-icon"><i class="fab ${icons[i % icons.length]}"></i></div>
-      <h3>${esc(c.title)}</h3>
-      <div class="desc">${esc(c.description || 'No description')}</div>
-      <div class="meta">
-        <span><i class="far fa-calendar"></i> ${c.createdAt ? c.createdAt.slice(0, 10) : '—'}</span>
-      </div>
-    </div>
-  `).join('');
-}
+document.querySelectorAll('.section, .clients, .hero-stats, .about-visual, .solutions-grid, .adv-grid, .cases-grid, .process-track').forEach(el => {
+  el.classList.add('reveal');
+  revealObserver.observe(el);
+});
 
-function filterCourses() {
-  const q = $('search-input').value.toLowerCase().trim();
-  if (!q) return renderCourses(allCourses);
-  const filtered = allCourses.filter(c =>
-    c.title.toLowerCase().includes(q) ||
-    (c.description && c.description.toLowerCase().includes(q))
-  );
-  const el = $('course-list');
-  if (!filtered.length) {
-    el.innerHTML = `<div class="empty"><i class="fas fa-search"></i><p>No courses matching "${esc(q)}"</p></div>`;
-  } else {
-    renderCourses(filtered);
-  }
-}
-
-async function loadCourseDetail(id) {
-  showPage('detail', false);
-  const el = $('course-detail');
-  el.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i>Loading...</div>';
-  try {
-    const c = await api('/courses/' + id);
-    const totalLessons = c.modules.reduce((s, m) => s + (m.lessons || []).length, 0);
-    const totalDuration = c.modules.reduce((s, m) =>
-      s + (m.lessons || []).reduce((ss, l) => ss + (l.durationMinutes || 0), 0), 0);
-
-    el.innerHTML = `
-      <div class="detail-hero">
-        <h2>${esc(c.title)}</h2>
-        <p>${esc(c.description || '')}</p>
-        <div class="stats">
-          <span><i class="fas fa-layer-group"></i> ${c.modules.length} modules</span>
-          <span><i class="fas fa-file"></i> ${totalLessons} lessons</span>
-          <span><i class="far fa-clock"></i> ${totalDuration} min total</span>
-        </div>
-      </div>
-
-      ${c.modules.map((m, mi) => `
-        <div class="module-card">
-          <div class="module-header" onclick="toggleLessons(this)">
-            <h3><i class="fas fa-folder${mi === 0 ? '-open' : ''}"></i> ${esc(m.title)}</h3>
-            <span class="badge">${(m.lessons || []).length} lessons</span>
-          </div>
-          <div class="lesson-list ${mi === 0 ? 'open' : ''}">
-            ${(m.lessons || []).map(l => `
-              <div class="lesson-item" onclick="previewLesson(${l.id})">
-                <span class="title">
-                  <i class="fas fa-play-circle"></i> ${esc(l.title)}
-                </span>
-                <span class="duration"><i class="far fa-clock"></i> ${l.durationMinutes} min</span>
-              </div>
-            `).join('') || '<div class="lesson-item" style="color:var(--text3)">No lessons</div>'}
-          </div>
-        </div>
-      `).join('')}
-
-      <div class="enroll-section">
-        <h3><i class="fas fa-user-plus"></i> Enroll a Student</h3>
-        <div class="enroll-row">
-          <select id="enroll-student">
-            <option value="">Select student...</option>
-          </select>
-          <button class="btn btn-success" onclick="enrollStudent(${c.id})">
-            <i class="fas fa-check"></i> Enroll
-          </button>
-        </div>
-      </div>
-    `;
-    await loadEnrollSelect();
-  } catch (e) {
-    el.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i><p>${esc(e.message)}</p></div>`;
-  }
-}
-
-function toggleLessons(header) {
-  const list = header.nextElementSibling;
-  const icon = header.querySelector('h3 i');
-  list.classList.toggle('open');
-  icon.className = list.classList.contains('open') ? 'fas fa-folder-open' : 'fas fa-folder';
-}
-
-async function previewLesson(lessonId) {
-  try {
-    const lesson = await api('/lessons/' + lessonId);
-    const content = lesson.content || 'No content available for this lesson.';
-    showPreview(`
-      <div class="preview-header">
-        <h3>${esc(lesson.title)}</h3>
-        <div class="meta">
-          <span><i class="far fa-clock"></i> ${lesson.durationMinutes} min</span>
-        </div>
-      </div>
-      <div class="preview-body">${esc(content)}</div>
-    `);
-  } catch (e) {
-    toast('Failed to load lesson preview', 'error');
-  }
-}
-
-async function loadEnrollSelect() {
-  try {
-    allStudents = await api('/students');
-    const sel = $('enroll-student');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Select student...</option>' +
-      allStudents.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.email)})</option>`).join('');
-  } catch (_) {}
-}
-
-async function enrollStudent(courseId) {
-  const studentId = $('enroll-student').value;
-  if (!studentId) return toast('Select a student first', 'error');
-  try {
-    const res = await api(`/courses/${courseId}/enroll?studentId=${studentId}`, { method: 'POST' });
-    toast(res.message || 'Enrolled successfully!');
-  } catch (e) {
-    toast(e.message, 'error');
-  }
-}
-
-// ===== STUDENTS =====
-async function loadStudents() {
-  const el = $('student-list');
-  el.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i>Loading...</div>';
-  try {
-    allStudents = await api('/students');
-    if (!allStudents.length) {
-      el.innerHTML = '<div class="empty"><i class="fas fa-users"></i><p>No students yet</p></div>';
-      return;
+// ===== COUNTER ANIMATION =====
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const numEls = entry.target.querySelectorAll('.hero-stat-num');
+      numEls.forEach(el => {
+        const target = parseInt(el.dataset.target);
+        if (!target) return;
+        let current = 0;
+        const step = Math.max(1, Math.ceil(target / 40));
+        const interval = setInterval(() => {
+          current += step;
+          if (current >= target) {
+            current = target;
+            clearInterval(interval);
+          }
+          el.textContent = current;
+        }, 30);
+      });
+      counterObserver.unobserve(entry.target);
     }
-    el.innerHTML = '<div class="student-grid">' +
-      allStudents.map(s => `
-        <div class="student-card">
-          <div class="avatar">${s.name.charAt(0).toUpperCase()}</div>
-          <div class="info">
-            <h4>${esc(s.name)}</h4>
-            <span>${esc(s.email)}</span>
-          </div>
-        </div>
-      `).join('') + '</div>';
-  } catch (e) {
-    el.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i><p>${esc(e.message)}</p></div>`;
+  });
+}, { threshold: 0.5 });
+
+const heroStats = document.querySelector('.hero-stats');
+if (heroStats) counterObserver.observe(heroStats);
+
+// ===== CHATBOT =====
+const chatBubble = document.getElementById('chatBubble');
+const chatPanel = document.getElementById('chatPanel');
+const chatClose = document.getElementById('chatClose');
+const chatMessages = document.getElementById('chatMessages');
+const chatOptions = document.getElementById('chatOptions');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+const chatInputArea = document.getElementById('chatInputArea');
+
+let chatStep = 'niche';
+let chatData = {};
+
+chatBubble.addEventListener('click', () => {
+  chatBubble.classList.add('hidden');
+  chatPanel.classList.add('open');
+  setTimeout(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }, 100);
+});
+
+chatClose.addEventListener('click', () => {
+  chatPanel.classList.remove('open');
+  chatBubble.classList.remove('hidden');
+});
+
+function addMessage(text, type = 'ai') {
+  const msg = document.createElement('div');
+  msg.className = `chat-msg chat-msg-${type}`;
+  msg.innerHTML = `<div class="chat-msg-text">${text}</div>`;
+  chatMessages.appendChild(msg);
+  setTimeout(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }, 50);
+}
+
+function setOptions(options) {
+  chatOptions.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'chat-opt';
+    btn.textContent = opt;
+    btn.dataset.val = opt;
+    btn.addEventListener('click', () => handleOption(opt));
+    chatOptions.appendChild(btn);
+  });
+  chatOptions.style.display = 'flex';
+  chatInputArea.style.display = 'none';
+}
+
+function setInput(placeholder) {
+  chatOptions.style.display = 'none';
+  chatInputArea.style.display = 'flex';
+  chatInput.placeholder = placeholder;
+  chatInput.disabled = false;
+  chatSend.disabled = false;
+  chatInput.value = '';
+  chatInput.focus();
+}
+
+function handleOption(val) {
+  if (chatStep === 'niche') {
+    chatData.niche = val;
+    addMessage(`<b>${val}</b> — отличная ниша! Расскажите, какая у вас главная боль в бизнесе? Что хотите автоматизировать?`, 'ai');
+    chatStep = 'pain';
+    setInput('Например: обработка заявок, отчётность, поддержка...');
   }
 }
 
-function showAddStudentForm() {
-  showModal(`
-    <h3><i class="fas fa-user-plus"></i> Add Student</h3>
-    <div class="form-group">
-      <label>Full Name</label>
-      <input type="text" id="student-name" placeholder="e.g. Jane Doe">
-    </div>
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="student-email" placeholder="e.g. jane@example.com">
-    </div>
-    <button class="btn" onclick="addStudent()"><i class="fas fa-check"></i> Create Student</button>
-  `);
-  setTimeout(() => { const el = $('student-name'); if (el) el.focus(); }, 100);
-}
+chatSend.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
 
-async function addStudent() {
-  const name = $('student-name').value.trim();
-  const email = $('student-email').value.trim();
-  if (!name || !email) return toast('Fill all fields', 'error');
-  try {
-    await api('/students', {
+function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  addMessage(text, 'user');
+  chatInput.value = '';
+
+  if (chatStep === 'pain') {
+    chatData.pain = text;
+    addMessage('Спасибо! Это решаемо. Оставьте, пожалуйста, ваш контакт — мы свяжемся в ближайшее время и покажем, как ИИ-агент решит вашу задачу.', 'ai');
+    chatStep = 'contact';
+    setInput('Ваш телефон или e-mail');
+  } else if (chatStep === 'contact') {
+    chatData.contact = text;
+    addMessage(`Отлично, мы получили ваши данные! Наш менеджер свяжется с вами в течение 24 часов. Хорошего дня! 🚀`, 'ai');
+    chatStep = 'done';
+    chatOptions.style.display = 'flex';
+    chatOptions.innerHTML = `<button class="chat-opt" onclick="window.location.href='#contact'">Заполнить полный бриф</button>`;
+    chatInputArea.style.display = 'none';
+
+    // send data to server
+    const payload = {
+      niche: chatData.niche || '',
+      pain: chatData.pain || '',
+      contact: chatData.contact || ''
+    };
+    fetch('/api/chat-lead', {
       method: 'POST',
-      body: JSON.stringify({ name, email })
-    });
-    closeModal();
-    toast('Student created!');
-    loadStudents();
-  } catch (e) {
-    toast(e.message, 'error');
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
   }
 }
 
-function showAddCourseForm() {
-  showModal(`
-    <h3><i class="fas fa-plus-circle"></i> New Course</h3>
-    <div class="form-group">
-      <label>Course Title</label>
-      <input type="text" id="course-title" placeholder="e.g. Advanced Kubernetes">
-    </div>
-    <div class="form-group">
-      <label>Description</label>
-      <textarea id="course-desc" placeholder="Course description..."></textarea>
-    </div>
-    <button class="btn" onclick="addCourse()"><i class="fas fa-check"></i> Create Course</button>
-  `);
-  setTimeout(() => { const el = $('course-title'); if (el) el.focus(); }, 100);
-}
-
-async function addCourse() {
-  const title = $('course-title').value.trim();
-  const description = $('course-desc').value.trim();
-  if (!title) return toast('Title is required', 'error');
-  try {
-    await api('/courses', {
+// ===== BRIEF FORM =====
+const briefForm = document.getElementById('briefForm');
+if (briefForm) {
+  briefForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(briefForm);
+    const data = Object.fromEntries(formData.entries());
+    fetch('/api/lead', {
       method: 'POST',
-      body: JSON.stringify({ title, description })
-    });
-    closeModal();
-    toast('Course created!');
-    loadCourses();
-  } catch (e) {
-    toast(e.message, 'error');
-  }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(res => {
+      if (res.ok) {
+        briefForm.innerHTML = `
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:3rem;margin-bottom:16px;color:var(--accent);">✓</div>
+            <h3 style="margin-bottom:8px;">Спасибо!</h3>
+            <p style="color:var(--text2);">Мы получили вашу заявку и свяжемся в течение 24 часов.</p>
+          </div>
+        `;
+      }
+    }).catch(() => {});
+  });
 }
 
-// ===== HERO STATS =====
-async function loadStats() {
-  try {
-    const [courses, students] = await Promise.all([
-      api('/courses'),
-      api('/students')
-    ]);
-    let mods = 0, less = 0;
-    for (const c of courses) {
-      try {
-        const detail = await api('/courses/' + c.id);
-        for (const m of detail.modules) {
-          mods++;
-          less += (m.lessons || []).length;
-        }
-      } catch(_) {}
+// ===== SMOOTH SCROLL (anchor offset) =====
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function(e) {
+    const href = this.getAttribute('href');
+    if (href === '#') return;
+    e.preventDefault();
+    const target = document.querySelector(href);
+    if (target) {
+      const offset = 80;
+      const top = target.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
     }
-    animateNum('stat-courses', courses.length);
-    animateNum('stat-modules', mods);
-    animateNum('stat-lessons', less);
-    animateNum('stat-students', students.length);
-  } catch(_) {}
-}
-
-function animateNum(id, target) {
-  const el = $(id);
-  if (!el) return;
-  let current = 0;
-  const step = Math.max(1, Math.ceil(target / 30));
-  const interval = setInterval(() => {
-    current += step;
-    if (current >= target) { current = target; clearInterval(interval); }
-    el.textContent = current;
-  }, 40);
-}
-
-// ===== HELPERS =====
-function esc(s) {
-  if (!s) return '';
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-// ===== INIT =====
-loadStats();
+  });
+});
